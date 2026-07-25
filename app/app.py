@@ -33,7 +33,7 @@ async def lifespan(app:FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-class PassangerSchema(BaseModel):
+class PassengerSchema(BaseModel):
     Pclass: int
     Name: str
     Sex: str
@@ -46,7 +46,7 @@ class PassangerSchema(BaseModel):
     Embarked: Optional[str] = None
 
 @app.post("/predict")
-async def predict_single(request: Request, payload: PassangerSchema):
+async def predict_single(request: Request, payload: PassengerSchema):
     extractor = request.app.state.extractor
     session = request.app.state.session
 
@@ -74,7 +74,7 @@ async def predict_single(request: Request, payload: PassangerSchema):
 
 
 @app.post("/predict_batch")
-async def predict_batch(request: Request, payload: List[PassangerSchema]):
+async def predict_batch(request: Request, payload: List[PassengerSchema]):
     extractor = request.app.state.extractor
     session = request.app.state.session
 

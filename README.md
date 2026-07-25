@@ -7,5 +7,5 @@ That's my practice for integrating different formats of models and deploying the
 (**Template**): Docker command for setup:
 
 ```bash
-docker compose up -d --bulild
+docker compose up -d --build
 ```
