@@ -1,0 +1,89 @@
+name: "feature_extractor"
+backend: "python"
+max_batch_size: 32
+
+input [
+  { name: "Pclass",   data_type: TYPE_INT32,  dims: [ 1 ] },
+  { name: "Name",     data_type: TYPE_STRING, dims: [ 1 ] },
+  { name: "Sex",      data_type: TYPE_STRING, dims: [ 1 ] },
+  { name: "Age",      data_type: TYPE_FP32,   dims: [ 1 ], optional: true },
+  { name: "SibSp",    data_type: TYPE_INT32,  dims: [ 1 ] },
+  { name: "Parch",    data_type: TYPE_INT32,  dims: [ 1 ] },
+  { name: "Ticket",   data_type: TYPE_STRING, dims: [ 1 ] },
+  { name: "Fare",     data_type: TYPE_FP32,   dims: [ 1 ], optional: true },
+  { name: "Cabin",    data_type: TYPE_STRING, dims: [ 1 ], optional: true },
+  { name: "Embarked", data_type: TYPE_STRING, dims: [ 1 ], optional: true }
+]
+
+output [
+  {
+    name: "Pclass"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "Age"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "SibSp"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "Parch"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "Fare"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "HasCabin"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "CabinCount"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "GroupSize"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "NameLen"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+  {
+    name: "Sex"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+  {
+    name: "Embarked"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+  {
+    name: "Deck"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+  {
+    name: "TicketPrefix"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+  {
+    name: "Title"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+]
