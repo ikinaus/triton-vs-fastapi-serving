@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # Triton Inference Server
   triton:
-    container_name: triton-resnet152
+    container_name: triton-clml
     image: nvcr.io/nvidia/tritonserver:24.10-py3
     ports:
       - 8000:8000 # HTTP API
