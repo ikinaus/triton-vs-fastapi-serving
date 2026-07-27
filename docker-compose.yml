@@ -11,12 +11,5 @@ services:
       - 8002:8002 # Metrics Monitoring
     restart: always
     volumes:
-      - ./triton/models:/models
-    command: [ "tritonserver", "--model-store=/models" ]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
+      - ./model_repository:/models
+    command: [ "tritonserver", "--model-repository=/models" ]
