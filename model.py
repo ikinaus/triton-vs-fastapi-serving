@@ -2,7 +2,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath('app'))
-from app.features import FeatureExtractor
+from app_fastapi.features import FeatureExtractor
 
 import pandas as pd
 
