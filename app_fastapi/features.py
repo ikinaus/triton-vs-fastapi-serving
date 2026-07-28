@@ -28,6 +28,8 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         if 'PassengerId' in X.columns.to_list():
             X_out = X_out.drop(columns=['PassengerId'])
 
+        
+
         # Cabin Feature
         X_out['HasCabin'] = X_out['Cabin'].notna().astype('int')
         X_out['Deck'] = X_out['Cabin'].str[0].fillna('U')

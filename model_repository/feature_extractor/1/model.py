@@ -45,7 +45,6 @@ class TritonPythonModel:
             df = pd.DataFrame.from_dict(row)
             df_prep = self.extractor.transform(df)
 
-
             for col in df_prep.columns:
                 if col in categorical_features:
                     df_prep[col] = df_prep[col].str.encode('utf-8')
