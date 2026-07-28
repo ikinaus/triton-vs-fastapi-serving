@@ -6,10 +6,6 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 
-
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-EXTRACTOR_PATH = os.path.join(CURRENT_DIR, 'extractor.pkl')
-MODEL_PATH = os.path.join(CURRENT_DIR, 'model.onnx')
 TRITON_URL = os.environ.get('TRITON_URL', 'localhost:8001')
 
 FIELD_SPECS = {
@@ -46,17 +42,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.post("/predict")
-async def predict_single(request: Request, payload: PassengerSchema) -> Dict:
-    row = payload.model_dump()
-
+async def infer_passengers(client, rows: List[Dict]) -> List[Dict]:
     inputs = []
     for name, (triton_type, np_dtype) in FIELD_SPECS.items():
-        value = row[name]
-        if value is None:
+        values = [row[name] for row in rows]
+
+        if all(v is None for v in values):
             continue
 
-        arr = np.array([[value]], dtype=np_dtype)
+        arr = np.array(
+            [v if v is not None else np.nan for v in values],
+            dtype=np_dtype,
+        ).reshape(-1, 1)
 
         inp = grpcclient.InferInput(name, list(arr.shape), triton_type)
         inp.set_data_from_numpy(arr)
@@ -67,7 +64,6 @@ async def predict_single(request: Request, payload: PassengerSchema) -> Dict:
         grpcclient.InferRequestedOutput('probabilities'),
     ]
 
-    client = request.app.state.triton
     result = await client.infer(
         model_name="titanic_ensemble",
         inputs=inputs,
@@ -76,43 +72,22 @@ async def predict_single(request: Request, payload: PassengerSchema) -> Dict:
     label = result.as_numpy('label')
     probs = result.as_numpy('probabilities')
 
-    return {
-        'survived': bool(label[0]),
-        'proba': float(probs[0][1]),
-    }
+    return [
+        {
+            'survived': bool(label[i]),
+            'proba': float(probs[i, 1]),
+        }
+        for i in range(len(rows))
+    ]
+
+
+@app.post("/predict")
+async def predict_single(request: Request, payload: PassengerSchema) -> Dict:
+    results = await infer_passengers(request.app.state.triton, [payload.model_dump()])
+    return results[0]
+
 
 @app.post("/predict_batch")
 async def predict_batch(request: Request, payload: List[PassengerSchema]) -> List[Dict]:
     rows = [p.model_dump() for p in payload]
-
-    inputs = []
-    for name, (triton_type, np_dtype) in FIELD_SPECS.items():
-        values = [row[name] if row[name] is not None else np.nan for row in rows]
-        arr = np.array(values, dtype=np_dtype).reshape(-1, 1)
-
-        inp = grpcclient.InferInput(name, list(arr.shape), triton_type)
-        inp.set_data_from_numpy(arr)
-        inputs.append(inp)
-
-    outputs = [
-        grpcclient.InferRequestedOutput('label'),
-        grpcclient.InferRequestedOutput('probabilities'),
-    ]
-
-    client = request.app.state.triton
-    result = await client.infer(
-        model_name="titanic_ensemble",
-        inputs=inputs,
-        outputs=outputs,
-    )
-    label = result.as_numpy('label')
-    probs = result.as_numpy('probabilities')
-
-    results = []
-    for i in range(len(payload)):
-        results.append({
-            'survived': bool(label[i]),
-            'proba': float(probs[i, 1]),
-        })
-
-    return results
+    return await infer_passengers(request.app.state.triton, rows)
