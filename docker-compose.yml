@@ -1,9 +1,9 @@
-version: "3.8"
-
 services:
   # Triton Inference Server
   triton:
-    container_name: triton-clml
+    profiles:
+      - triton
+    container_name: clml-tritonserver
     image: nvcr.io/nvidia/tritonserver:24.10-py3
     ports:
       - 8000:8000 # HTTP API
@@ -13,3 +13,31 @@ services:
     volumes:
       - ./model_repository:/models
     command: [ "tritonserver", "--model-repository=/models" ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # App api
+  api-triton:
+    profiles:
+      - triton
+    build: ./app_triton
+    container_name: clml-app-triton
+    ports:
+      - 8080:8080
+    environment:
+      - TRITON_URL=triton:8001
+    depends_on:
+      triton:
+        condition: service_healthy
+
+  api-fastapi:
+    profiles:
+      - fastapi
+    build: ./app_fastapi
+    container_name: clml-app-fastapi
+    ports:
+      - 8080:8080
