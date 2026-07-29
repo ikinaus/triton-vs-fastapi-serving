@@ -1,4 +1,3 @@
-from typing import Any, Self
 from sklearn.base import BaseEstimator, TransformerMixin
 import pandas as pd
 import numpy as np
@@ -10,7 +9,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         self.ticket_frequency_ = {}
         self.rare_prefix_ = []
 
-    def fit(self, X: pd.DataFrame, y: Any = None) -> Self:
+    def fit(self, X: pd.DataFrame, y = None) -> "FeatureExtractor":
         
         self.ticket_frequency_ = X['Ticket'].value_counts().to_dict()
 
