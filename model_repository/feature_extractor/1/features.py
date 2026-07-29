@@ -29,6 +29,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
             X_out = X_out.drop(columns=['PassengerId'])
 
         X_out[['Cabin', 'Embarked']] = X_out[['Cabin', 'Embarked']].replace({'nan': np.nan}).astype(object)
+        X_out[['Age', 'Fare']] = X_out[['Age', 'Fare']].astype(float)
 
         # Cabin Feature
         X_out['HasCabin'] = X_out['Cabin'].notna().astype('int')

@@ -89,5 +89,7 @@ async def predict_single(request: Request, payload: PassengerSchema) -> Dict:
 
 @app.post("/predict_batch")
 async def predict_batch(request: Request, payload: List[PassengerSchema]) -> List[Dict]:
+    if not payload:
+        return []
     rows = [p.model_dump() for p in payload]
     return await infer_passengers(request.app.state.triton, rows)

@@ -10,7 +10,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         self.rare_prefix_ = []
 
     def fit(self, X: pd.DataFrame, y = None) -> "FeatureExtractor":
-        
+
         self.ticket_frequency_ = X['Ticket'].value_counts().to_dict()
 
         prefix_freq = (X['Ticket']
@@ -22,13 +22,14 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         self.rare_prefix_ = prefix_freq[prefix_freq < self.prefix_treshold].index.to_list()
 
         return self
-    
+
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_out = X.copy()
         if 'PassengerId' in X.columns.to_list():
             X_out = X_out.drop(columns=['PassengerId'])
 
         X_out[['Cabin', 'Embarked']] = X_out[['Cabin', 'Embarked']].replace({'nan': np.nan}).astype(object)
+        X_out[['Age', 'Fare']] = X_out[['Age', 'Fare']].astype(float)
 
         # Cabin Feature
         X_out['HasCabin'] = X_out['Cabin'].notna().astype('int')

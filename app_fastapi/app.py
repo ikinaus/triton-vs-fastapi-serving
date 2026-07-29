@@ -22,9 +22,10 @@ categorical_features = ['Sex', 'Embarked', 'Deck', 'TicketPrefix', 'Title']
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    
+
     with open(EXTRACTOR_PATH, 'rb') as f:
         app.state.extractor = pickle.load(f)
+
     app.state.session = ort.InferenceSession(MODEL_PATH)
     yield
 
@@ -69,12 +70,16 @@ async def predict_single(request: Request, payload: PassengerSchema):
 
     return {
         'survived': label,
-        'proba': prob_survived 
+        'proba': prob_survived
     }
 
 
 @app.post("/predict_batch")
 async def predict_batch(request: Request, payload: List[PassengerSchema]):
+
+    if not payload:
+        return []
+
     extractor = request.app.state.extractor
     session = request.app.state.session
 
