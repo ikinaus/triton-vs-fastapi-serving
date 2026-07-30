@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/tritonserver:24.10-py3
+FROM nvcr.io/nvidia/tritonserver:26.06-py3
 
 WORKDIR /env
 
