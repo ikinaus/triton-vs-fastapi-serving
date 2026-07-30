@@ -65,7 +65,7 @@ async def predict_single(request: Request, payload: PassengerSchema):
     output_names = [out.name for out in session.get_outputs()]
     onnx_outputs = session.run(output_names, onnx_inputs)
 
-    label = int(onnx_outputs[0][0])
+    label = bool(onnx_outputs[0][0])
     prob_survived = float(onnx_outputs[1][0][1])
 
     return {
@@ -102,7 +102,7 @@ async def predict_batch(request: Request, payload: List[PassengerSchema]):
     results = []
     for i in range(len(payload)):
         results.append({
-            "survived": int(labels[i]),
+            "survived": bool(labels[i]),
             "proba": float(probs[i][1])
         })
 

@@ -28,7 +28,9 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         if 'PassengerId' in X.columns.to_list():
             X_out = X_out.drop(columns=['PassengerId'])
 
-        X_out[['Cabin', 'Embarked']] = X_out[['Cabin', 'Embarked']].replace({'nan': np.nan}).astype(object)
+        cols = ['Cabin', 'Embarked']
+        missing_mask = X_out[cols].isna() | (X_out[cols] == 'nan')
+        X_out[cols] = X_out[cols].where(~missing_mask, np.nan).astype(object)
         X_out[['Age', 'Fare']] = X_out[['Age', 'Fare']].astype(float)
 
         # Cabin Feature
