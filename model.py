@@ -1,7 +1,3 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath('app'))
 from app_fastapi.features import FeatureExtractor
 
 import pandas as pd
@@ -110,9 +106,9 @@ onnx_model = convert_sklearn(
 )
 
 # ONXX conversion
-with open('app/model.onnx', 'wb') as f:
+with open('app_fastapi/model.onnx', 'wb') as f:
     f.write(onnx_model.SerializePartialToString())
 
 # Making the pkl file (Serializing the FeatureExtractor object)
-with open('app/extractor.pkl', 'wb') as f:
+with open('app_fastapi/extractor.pkl', 'wb') as f:
     pickle.dump(pipeline.named_steps['extractor'], f)
