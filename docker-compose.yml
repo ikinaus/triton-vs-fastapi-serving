@@ -16,13 +16,13 @@ services:
       - 8002:8002 # Metrics Monitoring
     restart: always
     volumes:
-      - ./model_repository:/models.
+      - ./model_repository:/models
       - ./src/features.py:/models/feature_extractor/1/features.py:ro
       - ./artifacts/extractor.pkl:/models/feature_extractor/1/extractor.pkl:ro
       - ./artifacts/model.onnx:/models/titanic_classifier/1/model.onnx:ro
     command: [ "tritonserver", "--model-repository=/models" ]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/v2/health/ready" ]
       interval: 10s
       timeout: 5s
       retries: 5
