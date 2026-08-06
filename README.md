@@ -105,19 +105,19 @@ would not compare across endpoints.
 
 `POST /predict` — one row per request:
 
-| Concurrency | FastAPI p50 | FastAPI pred/s | Triton p50 | Triton pred/s |
-|---|---|---|---|---|
-| 1 | 6.55 ms | 148 | 23.17 ms | 40 |
-| 8 | 59.05 ms | 133 | 80.71 ms | 92 |
-| 32 | 251.40 ms | 127 | 305.05 ms | 99 |
+| Concurrency | FastAPI p50 | FastAPI p95 | FastAPI pred/s | Triton p50 | Triton p95 | Triton pred/s |
+|---|---|---|---|---|---|---|
+| 1 | 6.55 ms | 7.96 ms | 148 | 23.17 ms | 34.96 ms | 40 |
+| 8 | 59.05 ms | 83.02 ms | 133 | 80.71 ms | 127.47 ms | 92 |
+| 32 | 251.40 ms | 325.36 ms | 127 | 305.05 ms | 444.13 ms | 99 |
 
 `POST /predict_batch` — 32 rows per request:
 
-| Concurrency | FastAPI p50 | FastAPI pred/s | Triton p50 | Triton pred/s |
-|---|---|---|---|---|
-| 1 | 7.41 ms | 4219 | 11.06 ms | 2827 |
-| 8 | 65.29 ms | 3802 | 65.02 ms | 3812 |
-| 32 | 269.01 ms | 3764 | 260.43 ms | 3811 |
+| Concurrency | FastAPI p50 | FastAPI p95 | FastAPI pred/s | Triton p50 | Triton p95 | Triton pred/s |
+|---|---|---|---|---|---|---|
+| 1 | 7.41 ms | 8.99 ms | 4219 | 11.06 ms | 12.98 ms | 2827 |
+| 8 | 65.29 ms | 88.32 ms | 3802 | 65.02 ms | 78.89 ms | 3812 |
+| 32 | 269.01 ms | 339.40 ms | 3764 | 260.43 ms | 314.80 ms | 3811 |
 
 ### Reading this
 
@@ -132,6 +132,10 @@ batches, 127 from 32 clients sending single rows.
 Both stacks hit the same wall: the pandas preprocessing in `src/features.py`. The ONNX
 inference itself is 0.26 ms, under 1% of the response time. FastAPI is GIL-bound on
 one core out of twelve; Triton is bound by a single Python-backend instance.
+
+The tail says the same thing as the median. On single rows Triton's p95/p50 runs ~1.5
+against FastAPI's 1.2–1.3 — the batcher's timeout widens the spread, not just the
+centre. On full batches the ordering flips and both tighten (1.17–1.21 vs 1.21–1.26).
 
 Triton's per-request budget at concurrency 1, from `nv_inference_*_duration_us`:
 
