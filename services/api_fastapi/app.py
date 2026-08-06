@@ -26,7 +26,9 @@ async def lifespan(app:FastAPI):
     with open(EXTRACTOR_PATH, 'rb') as f:
         app.state.extractor = pickle.load(f)
 
-    app.state.session = ort.InferenceSession(MODEL_PATH)
+    sess_options = ort.SessionOptions()
+    sess_options.intra_op_num_threads = 1
+    app.state.session = ort.InferenceSession(MODEL_PATH, sess_options)
     yield
 
     del app.state.extractor
