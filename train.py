@@ -1,4 +1,13 @@
-from app_fastapi.features import FeatureExtractor
+from pathlib import Path
+import sys 
+
+ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / 'Data'
+ARTIFACTS_DIR = ROOT / 'artifacts'
+SRC_DIR = ROOT / 'src'
+sys.path.insert(0, str(SRC_DIR))
+
+from features import FeatureExtractor
 
 import pandas as pd
 
@@ -54,7 +63,7 @@ pipeline = Pipeline(steps=[
 ])
 
 # Reading and splitting data
-train_df = pd.read_csv('Data/train.csv')
+train_df = pd.read_csv(DATA_DIR / 'train.csv')
 y = train_df['Survived']
 X = train_df.drop(columns=['Survived'])
 X_train, X_val, y_train, y_val = train_test_split(
@@ -105,10 +114,10 @@ onnx_model = convert_sklearn(
     options={'zipmap': False}
 )
 
-# ONXX conversion
-with open('app_fastapi/model.onnx', 'wb') as f:
+# ONNX conversion
+with open(ARTIFACTS_DIR / 'model.onnx', 'wb') as f:
     f.write(onnx_model.SerializePartialToString())
 
 # Making the pkl file (Serializing the FeatureExtractor object)
-with open('app_fastapi/extractor.pkl', 'wb') as f:
+with open(ARTIFACTS_DIR / 'extractor.pkl', 'wb') as f:
     pickle.dump(pipeline.named_steps['extractor'], f)
