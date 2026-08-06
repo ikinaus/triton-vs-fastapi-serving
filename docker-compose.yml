@@ -1,5 +1,5 @@
 x-webui-common: &webui-common
-  build: ./webui
+  build: ./services/webui
   ports:
     - 8501:8501
 
@@ -9,7 +9,7 @@ services:
     profiles:
       - triton
     container_name: clml-tritonserver
-    build: ./triton_inference_env
+    build: ./services/triton
     ports:
       - 8000:8000 # HTTP API
       - 8001:8001 # gRPC API
@@ -32,7 +32,7 @@ services:
   api-triton:
     profiles:
       - triton
-    build: ./app_triton
+    build: ./services/api_triton
     container_name: clml-app-triton
     ports:
       - 8080:8080
@@ -45,7 +45,7 @@ services:
   api-fastapi:
     profiles:
       - fastapi
-    build: ./app_fastapi
+    build: ./services/api_fastapi
     container_name: clml-app-fastapi
     ports:
       - 8080:8080

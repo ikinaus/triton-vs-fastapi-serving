@@ -2,7 +2,7 @@ from pathlib import Path
 import sys 
 
 ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / 'Data'
+DATA_DIR = ROOT / 'data'
 ARTIFACTS_DIR = ROOT / 'artifacts'
 SRC_DIR = ROOT / 'src'
 sys.path.insert(0, str(SRC_DIR))
