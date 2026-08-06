@@ -45,6 +45,56 @@ docker compose --profile triton --profile fastapi down
 
 Triton readiness check: `curl http://localhost:8000/v2/health/ready`
 
+## Architecture
+
+The FastAPI profile is one process: Pydantic validates, `FeatureExtractor` runs in-line,
+ONNX Runtime scores. The Triton profile splits the same two steps across an ensemble,
+with a thin FastAPI gateway keeping the HTTP contract identical:
+
+```mermaid
+flowchart LR
+    C["Client"] -->|"POST /predict — :8080"| GW["FastAPI gateway"]
+    GW -->|"gRPC — :8001"| ENS
+    subgraph ENS ["titanic_ensemble"]
+        direction LR
+        FE["feature_extractor<br/>python backend<br/>src/features.py"]
+        CL["titanic_classifier<br/>onnxruntime<br/>model.onnx"]
+        FE -->|"14 feature tensors"| CL
+    end
+    ENS -->|"label, probabilities"| GW
+```
+
+Both profiles read the same `src/features.py` and the same `artifacts/`, bind-mounted
+into place by `docker-compose.yml` — one copy of the code, one copy of the weights.
+
+## Null handling
+
+A tensor has no `NULL`: every element must hold a value from its dtype's domain. Floats
+get one for free — IEEE 754 reserves `NaN` — so `Age` and `Fare` cross the wire intact.
+Strings have no reserved value, so `Cabin` and `Embarked` arrive at
+`FeatureExtractor.transform` in three different shapes:
+
+| Path | Arrives as | Caught by |
+|---|---|---|
+| FastAPI — Pydantic `Optional[str] = None` | `None` | `.isna()` |
+| Triton — all rows null, client omits the tensor, the stub fills it | `np.nan` | `.isna()` |
+| Triton — mixed batch, tensor is sent, BYTES serialization stringifies the NaN | `"nan"` | `== 'nan'` |
+
+Hence the two-branch mask in `src/features.py`:
+
+```python
+missing_mask = X_out[cols].isna() | (X_out[cols] == 'nan')
+```
+
+Nobody chose `"nan"` — it falls out of `str(float('nan'))` inside tritonclient's BYTES
+serializer, an implementation detail of the client library leaking into the data
+contract. A declared sentinel, or a companion BOOL mask tensor, would be the honest fix;
+the two-branch mask is the cheap one.
+
+`optional: true` in `config.pbtxt` only helps when *every* row in the batch is null —
+a dense tensor cannot omit a single element. That is why the mixed batch is the case
+worth testing, and why `parity_check.py` covers it explicitly.
+
 ## Benchmark
 
 Same HTTP contract on `:8080` for both stacks, so one load generator ([`oha`](https://github.com/hatoo/oha))
