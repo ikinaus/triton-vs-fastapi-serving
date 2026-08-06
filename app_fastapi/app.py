@@ -47,7 +47,7 @@ class PassengerSchema(BaseModel):
     Embarked: Optional[str] = None
 
 @app.post("/predict")
-async def predict_single(request: Request, payload: PassengerSchema):
+def predict_single(request: Request, payload: PassengerSchema):
     extractor = request.app.state.extractor
     session = request.app.state.session
 
@@ -75,7 +75,7 @@ async def predict_single(request: Request, payload: PassengerSchema):
 
 
 @app.post("/predict_batch")
-async def predict_batch(request: Request, payload: List[PassengerSchema]):
+def predict_batch(request: Request, payload: List[PassengerSchema]):
 
     if not payload:
         return []
