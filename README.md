@@ -92,8 +92,9 @@ contract. A declared sentinel, or a companion BOOL mask tensor, would be the hon
 the two-branch mask is the cheap one.
 
 `optional: true` in `config.pbtxt` only helps when *every* row in the batch is null —
-a dense tensor cannot omit a single element. That is why the mixed batch is the case
-worth testing, and why `parity_check.py` covers it explicitly.
+a dense tensor cannot omit a single element. That is why a batch mixing present and
+missing values is the case worth testing: it is the only one that reaches the
+`== 'nan'` branch.
 
 ## Benchmark
 
