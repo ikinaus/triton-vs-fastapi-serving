@@ -1,6 +1,10 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 import pandas as pd
 import numpy as np
+import re
+
+RE_TITLE = re.compile(r" ([A-Za-z]+)\.")
+SLASH_DOT = re.compile(r"[/.]")
 
 class FeatureExtractor(BaseEstimator, TransformerMixin):
     def __init__(self, prefix_treshold=0.005) -> None:
@@ -8,6 +12,10 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         self.prefix_treshold = prefix_treshold
         self.ticket_frequency_ = {}
         self.rare_prefix_ = []
+
+    @staticmethod
+    def _missing(v) -> bool:
+        return v is None or v == 'nan' or isinstance(v, float) and v != v
 
     def fit(self, X: pd.DataFrame, y = None) -> "FeatureExtractor":
 
@@ -76,3 +84,13 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         X_out[cat_cols] = X_out[cat_cols].astype(str)
 
         return X_out
+
+    def transform_online(self, rows: list[dict]) -> list[dict]:
+
+        local_ticket_counter = {}
+
+        for r in rows:
+            t = r['Ticket']
+            local_ticket_counter[t] = local_ticket_counter.get(t, 0) + 1
+
+        return Any

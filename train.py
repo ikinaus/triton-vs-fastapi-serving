@@ -1,5 +1,5 @@
 from pathlib import Path
-import sys 
+import sys
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / 'data'
@@ -31,10 +31,10 @@ numeric_features = ['Pclass', 'Age', 'SibSp',
                     'CabinCount', 'GroupSize', 'NameLen']
 categorical_features = ['Sex', 'Embarked', 'Deck', 'TicketPrefix', 'Title']
 lgb_params = {
-    'learning_rate': 0.1, 
-    'max_depth': 4, 
-    'min_child_samples': 30, 
-    'n_estimators': 200, 
+    'learning_rate': 0.1,
+    'max_depth': 4,
+    'min_child_samples': 30,
+    'n_estimators': 200,
     'num_leaves': 7
 }
 
@@ -78,9 +78,9 @@ pipeline.fit(X_train, y_train)
 
 # ONNX conversion preprocessing
 update_registered_converter(
-    LGBMClassifier, 
+    LGBMClassifier,
     'LightGbmLGBMClassifier',
-    calculate_linear_classifier_output_shapes, 
+    calculate_linear_classifier_output_shapes,
     convert_lightgbm,
     options={"nocl": [True, False], "zipmap": [True, False, "columns"]}
 )
