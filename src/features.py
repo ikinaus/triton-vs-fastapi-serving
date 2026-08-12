@@ -5,6 +5,12 @@ import re
 
 RE_TITLE = re.compile(r" ([A-Za-z]+)\.")
 SLASH_DOT = re.compile(r"[/.]")
+FLAT_MAPPING = {
+    "Mr": "Mr",
+    "Miss": "Miss", "Mlle": "Miss", "Ms": "Miss",
+    "Mrs": "Mrs", "Mme": "Mrs",
+    "Master": "Master",
+}
 
 class FeatureExtractor(BaseEstimator, TransformerMixin):
     def __init__(self, prefix_treshold=0.005) -> None:
@@ -55,13 +61,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         X_out['NameLen'] = X_out['Name'].str.len()
         X_out['Title'] = X_out['Name'].str.extract(pat=r' ([A-Za-z]+)\.', expand=False)
 
-        flat_mapping = {
-            'Mr': 'Mr',
-            'Miss': 'Miss', 'Mlle': 'Miss', 'Ms': 'Miss',
-            'Mrs': 'Mrs', 'Mme': 'Mrs',
-            'Master': 'Master'
-        }
-        X_out['Title'] = X_out['Title'].map(flat_mapping).fillna('Rare').astype(str)
+        X_out['Title'] = X_out['Title'].map(FLAT_MAPPING).fillna('Rare').astype(str)
         X_out = X_out.drop(columns=['Name'])
 
         # Group Size
@@ -88,9 +88,50 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
     def transform_online(self, rows: list[dict]) -> list[dict]:
 
         local_ticket_counter = {}
-
         for r in rows:
             t = r['Ticket']
             local_ticket_counter[t] = local_ticket_counter.get(t, 0) + 1
 
-        return Any
+        out = []
+        for r in rows:
+            pclass, sibsp, parch, sex = r['Pclass'], r['SibSp'], r['Parch'], r['Sex']
+            age = float(r['Age']) if r['Age'] is not None else None
+            fare = float(r['Fare']) if r['Fare'] is not None else None
+
+            cabin = r['Cabin']
+            if self._missing(cabin):
+                cabin = None
+
+            embarked = r['Embarked']
+            if self._missing(embarked):
+                embarked = None
+
+            if cabin is None:
+                has_cabin, deck, cabin_count = 0, 'U', 0
+            else:
+                has_cabin = 1
+                deck = cabin[0]
+                cabin_count = cabin.strip().count(' ') + 1
+
+            name = r['Name']
+            name_len = len(name)
+            m = RE_TITLE.search(name)
+            title = FLAT_MAPPING.get(m.group(1), 'Rare') if m is not None else "Rare"
+
+            # GroupSize, TicketPrefix.
+
+            out.append({
+                "Pclass": pclass,
+                "Sex": sex,
+                "Age": age,
+                "SibSp": sibsp,
+                "Parch": parch,
+                "Fare": fare,
+                "Embarked": embarked,
+                "HasCabin": has_cabin,
+                "Deck": deck,
+                "CabinCount": cabin_count,
+                "NameLen": name_len,
+                "Title" : title,
+            })
+        return out
