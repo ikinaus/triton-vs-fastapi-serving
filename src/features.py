@@ -106,6 +106,8 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
             if self._missing(embarked):
                 embarked = None
 
+            embarked = str(embarked) if embarked is not None else 'nan'
+
             if cabin is None:
                 has_cabin, deck, cabin_count = 0, 'U', 0
             else:
@@ -118,7 +120,15 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
             m = RE_TITLE.search(name)
             title = FLAT_MAPPING.get(m.group(1), 'Rare') if m is not None else "Rare"
 
-            # GroupSize, TicketPrefix.
+
+            ticket = r['Ticket']
+            group_size = max(self.ticket_frequency_.get(ticket, 1), local_ticket_counter.get(ticket, 1))
+            cleaned = SLASH_DOT.sub('', ticket)
+            parts = cleaned.split()
+            prefix = parts[0] if len(parts) > 1 else 'NoPrefix'
+
+            if prefix in self.rare_prefix_:
+                prefix = 'Rare'
 
             out.append({
                 "Pclass": pclass,
@@ -133,5 +143,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
                 "CabinCount": cabin_count,
                 "NameLen": name_len,
                 "Title" : title,
+                "GroupSize": group_size,
+                "TicketPrefix": prefix,
             })
         return out
