@@ -122,12 +122,14 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 
 
             ticket = r['Ticket']
-            group_size = max(self.ticket_frequency_.get(ticket, 1), local_ticket_counter.get(ticket, 1))
+            ticket_frequency = self.ticket_frequency_
+            group_size = max(ticket_frequency.get(ticket, 1), local_ticket_counter.get(ticket, 1))
             cleaned = SLASH_DOT.sub('', ticket)
             parts = cleaned.split()
             prefix = parts[0] if len(parts) > 1 else 'NoPrefix'
 
-            if prefix in self.rare_prefix_:
+            rare_prefix = self.rare_prefix_
+            if prefix in rare_prefix:
                 prefix = 'Rare'
 
             out.append({
