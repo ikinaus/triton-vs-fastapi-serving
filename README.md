@@ -96,6 +96,83 @@ a dense tensor cannot omit a single element. That is why a batch mixing present 
 missing values is the case worth testing: it is the only one that reaches the
 `== 'nan'` branch.
 
+## What the preprocessing actually cost
+
+> **Draft.** The numbers below are measured; the benchmark tables further down are not
+> — they predate this change and are being re-run.
+
+The first benchmark said both stacks topped out around 120 predictions/sec and blamed
+"the preprocessing." That was true but not useful: it named a file, not a cause. Taking
+the question apart turned out to be the most interesting result in the repo.
+
+### Where the time went
+
+A single `/predict` took 6.55 ms. Timing the pieces:
+
+| | |
+|---|---|
+| `FeatureExtractor.transform` on one row | 5.84 ms |
+| everything else — HTTP, Pydantic, ONNX inference, JSON | ~0.55 ms |
+| of which the model itself | 0.12 ms |
+
+Preprocessing was 92% of the request and the model 2%.
+
+### Why pandas costs that much
+
+Profiling `transform` on one row: **18,314 Python function calls** to produce 14
+features. No hot spot — the heaviest single entry is 1.7% of total. Per call:
+
+| | calls | |
+|---|---|---|
+| `_instancecheck` / `_check` | 862 | type dispatch through pandas' ABC registry |
+| `__finalize__` | 62 | metadata propagation to each result |
+| `sanitize_array` | 47 | dtype validation on every column created |
+| `Index.__new__` | 22 | index objects |
+| `managers.apply` | 24 | BlockManager operations |
+
+None of it touches the data. It is bookkeeping charged **per operation, not per row** —
+index alignment, block management, dtype inference, metadata. Over 891 rows it amortizes
+to 6 µs/row and disappears. Over one row it is the entire cost.
+
+That also explains the flatness: pandas took 4.6 ms for 1 row and 4.6 ms for 32.
+
+### What was done
+
+`FeatureExtractor` grew a second method. `transform` (DataFrame in, DataFrame out) still
+serves training, where 891 rows arrive at once and the overhead is free.
+`transform_online` (list of dicts in, list of dicts out) serves requests: no DataFrame,
+no numpy, ~20 function calls.
+
+| one row | time | vs pandas |
+|---|---|---|
+| pandas `transform` | 5.36 ms | — |
+| polars, single expression pass | 1.20 ms | ×4 |
+| `transform_online`, plain Python | **0.0013 ms** | **×4090** |
+
+Polars is four times faster because its per-operation overhead is lower. It is still a
+DataFrame library, so the shape of the cost is unchanged. Dropping frames entirely is
+what moves the order of magnitude.
+
+The two methods are not redundant — they are specialized on either side of a crossover.
+`transform_online` is linear in rows (~1.5 µs each), the frame versions are flat. They
+meet around 900 rows against polars and 3,700 against pandas: exactly the boundary
+between serving a request and scoring a dataset. `max_batch_size: 32` means a request
+can never reach it.
+
+Equivalence is not assumed. Both methods are run over all 891 rows of `data/train.csv`
+and compared cell by cell; the same check covers the tensors each serving path builds
+from them.
+
+### What this leaves
+
+Preprocessing went from 92% of the request to ~0.02%. The floor is now HTTP handling,
+Pydantic validation and the 0.12 ms of inference — and embedding preprocessing into the
+ONNX graph, which was the obvious next lever, would land in the same place. Its remaining
+advantage is different in kind: no Python in the hot path, so no GIL, so no worker
+processes to manage.
+
+**The tables below are from before this change and no longer describe this code.**
+
 ## Benchmark
 
 Same HTTP contract on `:8080` for both stacks, so one load generator ([`oha`](https://github.com/hatoo/oha))
@@ -159,6 +236,14 @@ so it's a call about expected traffic shape, not a rule.
 CPU while serving 40–99 req/s; every 32-row run at ~85%. The difference is whether the
 batcher fills before its timeout — waiting appears to be a busy-wait. Clean correlation
 over eight runs, not traced to source.
+
+**Dynamic batching does nothing for a Python-backend model on its own.** The ONNX
+backend concatenates queued requests into one tensor and runs the graph once. The
+Python backend does not: `execute` receives a *list* of requests, each with its own
+tensors, and must return one response per request. Batching therefore amortizes the
+call into Python and nothing else — the preprocessing still runs once per request
+unless `execute` merges the rows itself. Measured: at an average batch of 4, one
+`execute` cost 41.6 ms, exactly four times the 10.4 ms of a batch of 1.
 
 ### What this does not measure
 
