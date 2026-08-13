@@ -6,3 +6,10 @@ notebooks/outputs/
 .idea/
 
 temp/
+
+# Bind-mount targets. docker-compose puts src/features.py and artifacts/* here at
+# runtime; Docker creates these as empty files on the host if they are absent, and
+# an empty features.py loads silently instead of failing.
+model_repository/feature_extractor/1/features.py
+model_repository/feature_extractor/1/extractor.pkl
+model_repository/titanic_classifier/1/model.onnx
