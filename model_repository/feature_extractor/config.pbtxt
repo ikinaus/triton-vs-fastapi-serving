@@ -37,4 +37,4 @@ dynamic_batching {
   max_queue_delay_microseconds: 10000
 }
 
-instance_group [ { count: 4, kind: KIND_CPU } ]
+instance_group [ { count: 1, kind: KIND_CPU } ]
