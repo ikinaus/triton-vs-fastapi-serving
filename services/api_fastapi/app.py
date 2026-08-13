@@ -2,7 +2,6 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import pandas as pd
 import numpy as np
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -12,13 +11,20 @@ import pickle
 from pydantic import BaseModel
 from typing import Optional, List
 
-from features import FeatureExtractor
+from features import FeatureExtractor, CATEGORICAL_FEATURES, NUMERIC_FEATURES
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 EXTRACTOR_PATH = os.path.join(CURRENT_DIR, 'extractor.pkl')
 MODEL_PATH = os.path.join(CURRENT_DIR, 'model.onnx')
 
-categorical_features = ['Sex', 'Embarked', 'Deck', 'TicketPrefix', 'Title']
+def build_onnx_inputs(records: list) -> dict:
+    inputs = {}
+    for name in CATEGORICAL_FEATURES:
+        inputs[name] = np.array([r[name] for r in records], dtype=str).reshape(-1, 1)
+    for name in NUMERIC_FEATURES:
+        column = [r[name] if r[name] is not None else np.nan for r in records]
+        inputs[name] = np.array(column, dtype=np.float32).reshape(-1, 1)
+    return inputs
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -53,16 +59,8 @@ def predict_single(request: Request, payload: PassengerSchema):
     extractor = request.app.state.extractor
     session = request.app.state.session
 
-    data_dict = payload.model_dump()
-    df = pd.DataFrame([data_dict])
-    df_prep = extractor.transform(df)
-
-    onnx_inputs = {}
-    for col in df_prep.columns:
-        if col in categorical_features:
-            onnx_inputs[col] = df_prep[col].astype(str).values.reshape(-1, 1)
-        else:
-            onnx_inputs[col] = df_prep[col].values.reshape(-1, 1).astype(np.float32)
+    records = extractor.transform_online([payload.model_dump()])
+    onnx_inputs = build_onnx_inputs(records)
 
     output_names = [out.name for out in session.get_outputs()]
     onnx_outputs = session.run(output_names, onnx_inputs)
@@ -85,15 +83,8 @@ def predict_batch(request: Request, payload: List[PassengerSchema]):
     extractor = request.app.state.extractor
     session = request.app.state.session
 
-    df = pd.DataFrame([item.model_dump() for item in payload])
-    df_prep = extractor.transform(df)
-
-    onnx_inputs = {}
-    for col in df_prep.columns:
-        if col in categorical_features:
-            onnx_inputs[col] = df_prep[col].astype(str).values.reshape(-1, 1)
-        else:
-            onnx_inputs[col] = df_prep[col].values.reshape(-1, 1).astype(np.float32)
+    records = extractor.transform_online([item.model_dump() for item in payload])
+    onnx_inputs = build_onnx_inputs(records)
 
     output_names = [out.name for out in session.get_outputs()]
     onnx_outputs = session.run(output_names, onnx_inputs)
