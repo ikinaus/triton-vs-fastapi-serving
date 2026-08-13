@@ -7,9 +7,8 @@ each deployment path actually costs and gives you:
 - **Triton** — NVIDIA Triton Inference Server, preprocessing and the model wired
   together as an ensemble, called over gRPC.
 
-Both paths are held to byte-identical outputs, including how missing values are handled
-end to end — the interesting part, since the two runtimes disagree on null semantics by
-default.
+Both paths are held to the same outputs, including how missing values are handled end to
+end — the interesting part, since the two runtimes disagree on null semantics by default.
 
 ## Run
 
