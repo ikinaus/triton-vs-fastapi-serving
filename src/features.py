@@ -5,6 +5,10 @@ import re
 
 RE_TITLE = re.compile(r" ([A-Za-z]+)\.")
 SLASH_DOT = re.compile(r"[/.]")
+
+CATEGORICAL_FEATURES = ("Sex", "Embarked", "Deck", "TicketPrefix", "Title")
+NUMERIC_FEATURES = ("Pclass", "Age", "SibSp", "Parch", "Fare",
+                    "HasCabin", "CabinCount", "GroupSize", "NameLen")
 FLAT_MAPPING = {
     "Mr": "Mr",
     "Miss": "Miss", "Mlle": "Miss", "Ms": "Miss",
