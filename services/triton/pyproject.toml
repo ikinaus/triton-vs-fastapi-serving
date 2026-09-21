@@ -1,0 +1,14 @@
+[project]
+name = "triton-env"
+version = "0.1.0"
+description = "Extra packages the Triton python_backend stub needs to unpickle and run FeatureExtractor"
+requires-python = "==3.12.*"
+dependencies = [
+    "pandas==2.3.3",
+    "scikit-learn==1.8.0",
+    "numpy==2.3.5",
+]
+
+[tool.uv]
+# An application, not a library: uv manages the environment and builds nothing.
+package = false

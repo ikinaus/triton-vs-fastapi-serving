@@ -1,0 +1,20 @@
+[project]
+name = "titanic-training"
+version = "0.1.0"
+description = "Trains the LightGBM pipeline and exports artifacts/model.onnx + artifacts/extractor.pkl"
+requires-python = "==3.12.*"
+dependencies = [
+    "lightgbm==4.6.0",
+    "numpy==2.3.5",
+    "onnx==1.21.0",
+    "onnxmltools==1.16.0",
+    "pandas==2.3.3",
+    "scikit-learn==1.8.0",
+    "skl2onnx==1.20.0",
+]
+
+[tool.uv]
+# A script, not a library: uv manages the environment and builds nothing.
+# The lock matters most here — skl2onnx and onnxmltools decide the shape of the
+# exported ONNX graph, scikit-learn decides whether extractor.pkl still loads.
+package = false

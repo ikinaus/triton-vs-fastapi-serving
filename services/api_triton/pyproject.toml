@@ -1,0 +1,16 @@
+[project]
+name = "api-triton"
+version = "0.1.0"
+description = "FastAPI gateway forwarding to the Triton ensemble over gRPC"
+requires-python = "==3.12.*"
+dependencies = [
+    "fastapi==0.138.1",
+    "uvicorn==0.49.0",
+    "tritonclient[grpc]==2.70.0",
+    "numpy==2.3.5",
+    "pydantic==2.13.2",
+]
+
+[tool.uv]
+# An application, not a library: uv manages the environment and builds nothing.
+package = false

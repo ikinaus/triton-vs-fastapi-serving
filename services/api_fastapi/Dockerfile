@@ -1,11 +1,13 @@
 FROM python:3.12
 
+COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
+
 WORKDIR /app
 
-COPY requirements.txt .
+COPY pyproject.toml uv.lock ./
 
-RUN pip install -r requirements.txt
+RUN uv sync --frozen --no-dev
 
 COPY app.py .
 
-CMD [ "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD [ ".venv/bin/uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080" ]
